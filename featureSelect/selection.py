@@ -1,7 +1,6 @@
 import numpy as np
 import math as mt
 import random as rd
-# from .evaluation import evaluation
 
 
 EPS = 2.2204e-16
@@ -16,7 +15,15 @@ FEATURE_SUB_NUM = 5	    # 特征子集的个数
 DATA_NUM = 10
 
 
-def select():
+def select(data, label):
+    global global_max, max_in_group, min_in_group, allfrog, grouped
+    # init frog group
+    global_max = Frog()  # the best in global
+    max_in_group = init_frogs(GROUP_NUM)  # the worst
+    min_in_group = init_frogs(GROUP_NUM)  # the best
+    allfrog = init_frogs(FROG_NUM)
+    grouped = np.zeros((GROUP_NUM, FROG_IN_GROUP), Frog)  # grouped group
+
     sort()
     for ite in range(REPEAT_NUM):
         update()
@@ -25,6 +32,109 @@ def select():
         print(ite, global_max.pos, global_max.eva)
 
     return global_max.pos, global_max.eva
+
+
+class Frog(object):
+    def __init__(self):
+        self.pos = np.array(rd.sample(range(FEATURE_NUM), FEATURE_SUB_NUM))  # 随机从初始特征集中随机选取一个特征子集
+        self.eva = evaluation(data, label, self.pos)
+
+    # @property
+    def set(self, arr):
+        self.pos = arr
+        self.eva = evaluation(data, label, self.pos)
+
+    def show(self):
+        print("show:", self.pos, self.eva)
+
+
+def readtxt(filename, row, col):
+    # filename = 'test_data.txt'  # txt文件和当前脚本在同一目录下，所以不用写具体路径
+    f = open(filename, 'r')
+    result = list()
+    for line in open(filename):
+        for i in line.split():
+            result.append(i)
+
+    data = np.zeros((row, col), float)
+    k = 0
+    for i in range(row):
+        for j in range(col):
+            data[i][j] = result[k]
+            k = k + 1
+
+    f.close()
+    return data
+
+
+def init_frogs(length):
+    arr = []
+    for i in range(length):
+        arr.append(Frog())
+
+    return arr
+
+
+def sort():
+    global global_max
+    # 降序排列所有青蛙的eva
+    for i in range(FROG_NUM):
+        for j in range(FROG_NUM):
+            if allfrog[i].eva > allfrog[j].eva:
+                temp = allfrog[i]
+                allfrog[i] = allfrog[j]
+                allfrog[j] = temp
+
+    k = 0
+    # 进行分组
+    for j in range(FROG_IN_GROUP):
+        for i in range(GROUP_NUM):
+            grouped[i][j] = allfrog[k]
+            k = k + 1
+
+    global_max = allfrog[0]
+    # global_max.show()
+    for i in range(GROUP_NUM):
+        max_in_group[i] = grouped[i][0]
+        min_in_group[i] = grouped[i][FROG_IN_GROUP - 1]
+
+
+def update():
+    for i in range(GROUP_NUM):
+        temp = min_in_group[i]
+        new_pos = updated_pos(temp.pos, max_in_group[i].pos)    # 往组内最优方向跳
+        temp.set(new_pos)
+        if temp.eva > min_in_group[i].eva:  # 跳跃成功
+            grouped[i][FROG_IN_GROUP - 1] = temp
+        else:
+            temp = min_in_group[i]
+            new_pos = updated_pos(temp.pos, global_max.pos)  # 往全局最优方向跳
+            temp.set(new_pos)
+            if temp.eva > min_in_group[i].eva:  # 跳跃成功
+                grouped[i][FROG_IN_GROUP - 1] = temp
+            else:
+                temp.set(rd.sample(range(FEATURE_NUM), FEATURE_SUB_NUM))
+                grouped[i][FROG_IN_GROUP - 1] = temp
+
+
+def updated_pos(pos, dir_pos):
+    same = list(set(pos).intersection(set(dir_pos)))
+    diff1 = list(set(pos).difference(set(dir_pos)))
+    diff2 = list(set(dir_pos).difference(set(pos)))
+    new_pos = np.array(same + diff1)
+    for index, val in enumerate(diff2):
+        if rd.random() > 0.5:
+            new_pos[len(same)+index] = val
+
+    return new_pos
+
+
+def shuffle():
+    k = 0
+    for j in range(FROG_IN_GROUP):
+        for i in range(GROUP_NUM):
+            allfrog[k] = grouped[i][j]
+            k = k + 1
 
 
 def ami(x, y):
@@ -126,124 +236,8 @@ def evaluation(data, label, B):
     return sum_lmi - ave_mi
 
 
-class Frog(object):
-    def __init__(self):
-        self.pos = np.array(rd.sample(range(FEATURE_NUM), FEATURE_SUB_NUM))  # 随机从初始特征集中随机选取一个特征子集
-        self.eva = evaluation(data, label, self.pos)
-
-    # @property
-    def set(self, arr):
-        self.pos = arr
-        self.eva = evaluation(data, label, self.pos)
-
-    def show(self):
-        print("show:", self.pos, self.eva)
-
-
-def readtxt(filename, row, col):
-    # filename = 'test_data.txt'  # txt文件和当前脚本在同一目录下，所以不用写具体路径
-    f = open(filename, 'r')
-    result = list()
-    for line in open(filename):
-        for i in line.split():
-            result.append(i)
-
-    data = np.zeros((row, col), float)
-    k = 0
-    for i in range(row):
-        for j in range(col):
-            data[i][j] = result[k]
-            k = k + 1
-
-    f.close()
-    return data
-
-
-def init_frogs(length):
-    arr = []
-    for i in range(length):
-        arr.append(Frog())
-
-    return arr
-
-
-# 加载数据
+# 群智能选择过程
 data = readtxt("test_data.txt", DATA_NUM, FEATURE_NUM)
 label = [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
-
-# init frog group
-global_max = Frog()                     # the best in global
-global_max.show()
-max_in_group = init_frogs(GROUP_NUM)    # the worst
-min_in_group = init_frogs(GROUP_NUM)    # the best
-allfrog = init_frogs(FROG_NUM)
-grouped = np.zeros((GROUP_NUM, FROG_IN_GROUP), Frog)    # grouped group
-
-
-def sort():
-    global global_max
-    # 降序排列所有青蛙的eva
-    for i in range(FROG_NUM):
-        for j in range(FROG_NUM):
-            if allfrog[i].eva > allfrog[j].eva:
-                temp = allfrog[i]
-                allfrog[i] = allfrog[j]
-                allfrog[j] = temp
-
-    k = 0
-    # 进行分组
-    for j in range(FROG_IN_GROUP):
-        for i in range(GROUP_NUM):
-            grouped[i][j] = allfrog[k]
-            k = k + 1
-
-    global_max = allfrog[0]
-    # global_max.show()
-    for i in range(GROUP_NUM):
-        max_in_group[i] = grouped[i][0]
-        min_in_group[i] = grouped[i][FROG_IN_GROUP - 1]
-
-
-def update():
-    for i in range(GROUP_NUM):
-        temp = min_in_group[i]
-        new_pos = updated_pos(temp.pos, max_in_group[i].pos)    # 往组内最优方向跳
-        temp.set(new_pos)
-        if temp.eva > min_in_group[i].eva:  # 跳跃成功
-            grouped[i][FROG_IN_GROUP - 1] = temp
-        else:
-            temp = min_in_group[i]
-            new_pos = updated_pos(temp.pos, global_max.pos)  # 往全局最优方向跳
-            temp.set(new_pos)
-            if temp.eva > min_in_group[i].eva:  # 跳跃成功
-                grouped[i][FROG_IN_GROUP - 1] = temp
-            else:
-                temp.set(rd.sample(range(FEATURE_NUM), FEATURE_SUB_NUM))
-                grouped[i][FROG_IN_GROUP - 1] = temp
-
-
-def updated_pos(pos, dir_pos):
-    same = list(set(pos).intersection(set(dir_pos)))
-    diff1 = list(set(pos).difference(set(dir_pos)))
-    diff2 = list(set(dir_pos).difference(set(pos)))
-    new_pos = np.array(same + diff1)
-    for index, val in enumerate(diff2):
-        if rd.random() > 0.5:
-            new_pos[len(same)+index] = val
-
-    return new_pos
-
-
-def shuffle():
-    k = 0
-    for j in range(FROG_IN_GROUP):
-        for i in range(GROUP_NUM):
-            allfrog[k] = grouped[i][j]
-            k = k + 1
-
-
-
-
-# 群智能选择过程
-select()
+select(data, label)
 print(global_max.pos, global_max.eva)
