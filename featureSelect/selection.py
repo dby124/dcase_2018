@@ -16,6 +16,16 @@ FEATURE_SUB_NUM = 5	    # 特征子集的个数
 DATA_NUM = 10
 
 
+def select():
+    sort()
+    for ite in range(REPEAT_NUM):
+        update()
+        shuffle()
+        sort()
+        print(ite, global_max.pos, global_max.eva)
+
+    return global_max.pos, global_max.eva
+
 
 def ami(x, y):
     """
@@ -125,7 +135,6 @@ class Frog(object):
     def set(self, arr):
         self.pos = arr
         self.eva = evaluation(data, label, self.pos)
-        # print("更新后:", self.pos, self.eva)
 
     def show(self):
         print("show:", self.pos, self.eva)
@@ -176,7 +185,7 @@ def sort():
     # 降序排列所有青蛙的eva
     for i in range(FROG_NUM):
         for j in range(FROG_NUM):
-            if allfrog[i].eva < allfrog[j].eva:
+            if allfrog[i].eva > allfrog[j].eva:
                 temp = allfrog[i]
                 allfrog[i] = allfrog[j]
                 allfrog[j] = temp
@@ -198,26 +207,18 @@ def sort():
 def update():
     for i in range(GROUP_NUM):
         temp = min_in_group[i]
-        # print("origin")
-        # temp.show()
         new_pos = updated_pos(temp.pos, max_in_group[i].pos)    # 往组内最优方向跳
-        # print("first")
         temp.set(new_pos)
-        print(temp.pos, temp.eva, new_pos, min_in_group[i].eva)
         if temp.eva > min_in_group[i].eva:  # 跳跃成功
             grouped[i][FROG_IN_GROUP - 1] = temp
         else:
             temp = min_in_group[i]
             new_pos = updated_pos(temp.pos, global_max.pos)  # 往全局最优方向跳
-            # print("second")
             temp.set(new_pos)
-            print(temp.pos, temp.eva, new_pos, min_in_group[i].eva)
             if temp.eva > min_in_group[i].eva:  # 跳跃成功
                 grouped[i][FROG_IN_GROUP - 1] = temp
             else:
-                # print("third")
                 temp.set(rd.sample(range(FEATURE_NUM), FEATURE_SUB_NUM))
-                print(temp.pos, temp.eva, new_pos, min_in_group[i].eva)
                 grouped[i][FROG_IN_GROUP - 1] = temp
 
 
@@ -230,7 +231,6 @@ def updated_pos(pos, dir_pos):
         if rd.random() > 0.5:
             new_pos[len(same)+index] = val
 
-    print(same+diff1, same+diff2, new_pos)
     return new_pos
 
 
@@ -242,19 +242,8 @@ def shuffle():
             k = k + 1
 
 
-def select():
-    sort()
-    for ite in range(REPEAT_NUM):
-        update()
-        shuffle()
-        sort()
-        print(ite, global_max.pos, global_max.eva)
-
-    return global_max.pos, global_max.eva
 
 
 # 群智能选择过程
 select()
 print(global_max.pos, global_max.eva)
-
-print(evaluation(data, label, np.array([7, 1, 6, 9, 8])))
