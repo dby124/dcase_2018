@@ -1,7 +1,41 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+# vim:fenc=utf-8
+#
+# Copyright © 2018 beatrice <beatrice@tju.edu.cn>
+#
+# Distributed under terms of the DSPLAB in Tianjin University license.
+
+"""
+Hilbert transform
+"""
+
 import numpy as np
-from scipy.signal import hilbert
+from pyhht.emd import EMD
 from pyhht.utils import inst_freq
 from numpy.matlib import repmat
+from scipy.signal import hilbert
+
+
+def get_hht(x, fs):
+    """
+    Hilbert-Huang transform of a frame in signal
+    :param x:   the frame in signal
+    :param fs:
+    :return:
+    A: numpy.ndarray, shape:(n_imf, len(x)- 1), n_imf means the number of imfs.
+    f: numpy.ndarray,shape:(n_imf, len(x)- 1), n_imf means the number of imfs.
+    bjp: numpy.ndarray, shape:len(x)- 1.
+    """
+    t = np.linspace(0, len(x) - 1, len(x) - 1)
+    decomposer = EMD(x)
+    imfs = decomposer.decompose()
+
+    A, f, tt = hhspectrum(imfs)
+
+    E, tt1, ff = toimage(A, f, tt, len(tt))
+    bjp = getbjp(E, fs)  # calculate Marginal spectrum
+    return A, f, bjp
 
 
 def hhspectrum(x, t=None, start_l=0):
@@ -68,7 +102,7 @@ def hhspectrum(x, t=None, start_l=0):
 
     A = abs(an[:, (start_l + 1): len(an[0]) - start_l])
 
-    return A, f.T, tt
+    return A, f, tt
 
 
 def accumarray(subs, val, *args):
@@ -163,16 +197,28 @@ def toimage(A, f, *args):
     indf = indf.astype(int)
     indt = indt.astype(int)
 
-    # print(indf.T.flatten().shape)
-    # print(indf.T.flatten()[154])
-    # print(indt.T.flatten().shape)
-    # print([indf.T.flatten(), indt.T.flatten()])
-    # print(A.T.flatten().shape)
-    # print("计算能量")
     E = accumarray([indf.T.flatten(), indt.T.flatten()], A.T.flatten(), [sply, splx])
-    # print([indf.T.flatten(), indt.T.flatten()])
-    # print(sum(sum(E)))
+
     indt = indt[1, :]
     tt2 = tt[indt]
     ff = np.round(np.linspace(0, sply-1, sply))*0.5/sply + (1/(4*sply))
     return E, tt2, ff
+
+
+def getbjp(E, fs):
+    """
+    calculate Marginal spectrum
+    :param E:
+    :param fs:
+    :return:
+    """
+    E = np.flipud(E)
+
+    row = len(E.T[0])
+    bjp = np.zeros(row)
+    for k in range(row):
+        temp = sum(E[k]) / fs
+        bjp[k] = temp
+
+    return bjp
+
