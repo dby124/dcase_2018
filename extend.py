@@ -178,7 +178,7 @@ class HHTFeatureExtractor(FeatureExtractor):
         hht_features : np.ndarray [30,), dtype=dtype]
 
         """
-        hht_features = np.empty(30, dtype=np.complex64, order='F')
+        hht_features = np.empty(27, dtype=np.complex64, order='F')
         hht_features[8] = np.var(bjp)
 
         # 边际谱的带宽和衰减个数（即在matlab中的num-band）
@@ -203,19 +203,19 @@ class HHTFeatureExtractor(FeatureExtractor):
         #     print("out of range:", A.shape[0])
 
         # 前6个分量瞬时频率的均值，方差和有效值
-        for k in range(5):
+        for k in range(4):
             hht_features[13 + k] = np.mean(A[k, :])
-            hht_features[18 + k] = np.var(A[k, :])
-            hht_features[23 + k] = np.sqrt(sum(np.power((A[k, :] - np.mean(A[k, :])), 2)) / A.shape[0])
+            hht_features[17 + k] = np.var(A[k, :])
+            hht_features[21 + k] = np.sqrt(sum(np.power((A[k, :] - np.mean(A[k, :])), 2)) / A.shape[0])
 
         # 所有分量瞬时频率的方差和
         for k in range(f.shape[0]):
             if k == 0:
-                hht_features[28] = np.var(f[k, :])
+                hht_features[25] = np.var(f[k, :])
 
-            hht_features[29] = hht_features[29] + np.var(f[k, :])   # 所有分量瞬时频率的方差和
+            hht_features[26] = hht_features[26] + np.var(f[k, :])   # 所有分量瞬时频率的方差和
 
-        hht_features[28] = hht_features[28] / hht_features[29]      # 第一个分量的瞬时频率方差贡献率
+        hht_features[25] = hht_features[25] / hht_features[26]      # 第一个分量的瞬时频率方差贡献率
 
         return hht_features
 
@@ -285,7 +285,7 @@ class HHTFeatureExtractor(FeatureExtractor):
         y_frames = util.frame(y, frame_length=self.n_hht, hop_length=hop_length).T
 
         # Pre-allocate the HHT matrix
-        hht_matrix = np.empty((30, y_frames.shape[0]),
+        hht_matrix = np.empty((27, y_frames.shape[0]),
                               dtype=dtype,
                               order='F')
 
