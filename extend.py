@@ -8,11 +8,10 @@
 # Distributed under terms of the DSPLAB in Tianjin University license.
 
 
-from __future__ import print_function, absolute_import
+# from __future__ import print_function, absolute_import
 
 import numpy as np
-import librosa
-from librosa import util, filters
+from librosa import util
 import scipy
 from dcase_util.features import FeatureExtractor
 from dcase_util.ui import FancyStringifier
@@ -22,7 +21,8 @@ from hht_extension import get_hht
 class HHTFeatureExtractor(FeatureExtractor):
     """HHT related feature extractor base class"""
     def __init__(self, fs=48000, win_length_samples=None, hop_length_samples=None, win_length_seconds=0.04,
-                 hop_length_seconds=0.02, n_imf=4, spectrogram_type='all', n_hht=1920, window_type='hamming_asymmetric', **kwargs):
+                 hop_length_seconds=0.02, n_imf=4, spectrogram_type='all', n_hht=1920, window_type='hamming_asymmetric',
+                 **kwargs):
         """Constructor
 
         Parameters
@@ -219,75 +219,7 @@ class HHTFeatureExtractor(FeatureExtractor):
 
         return hht_features
 
-    # def get_statics_feature(self, hht_related):
-    #     """Get statistics features from Hilbert-Huang transform (HHT) related features
-    #
-    #     Returns statistics: np.ndarray [shape=(2*n_imf,)], real-valued statistics features of hht_related
-    #     Parameters
-    #     ----------
-    #     hht_related : np.ndarray [shape=(n_imf, frame_length)], instantaneous frequency or amplitude
-    #      of a signal in a frame.
-    #
-    #     """
-    #     # n_imf = hht_related.shape[0] - 1
-    #     statistics = np.empty(2*self.n_imf, dtype=np.complex64, order='F')
-    #     # Get statistics features from each imf
-    #     for item in range(self.n_imf):
-    #         statistics[item] = np.mean(hht_related[item, :])
-    #         statistics[(hht_related.shape[0]-1)+item] = np.var(hht_related[item, :])
-    #
-    #     return statistics
-    #
-    # def get_sumvar(self, hht_related):
-    #     """Get sum of var from A related features
-    #
-    #     Returns statistics: np.ndarray [shape=(2*n_imf,)], real-valued statistics features of hht_related
-    #     Parameters
-    #     ----------
-    #     hht_related : np.ndarray [shape=(n_imf, frame_length)], instantaneous amplitude of a signal in a frame.
-    #
-    #     """
-    #     sum_num = 0
-    #     # Get statistics features from each imf
-    #     for item in range(hht_related.shape[0]):
-    #         sum_num = sum_num + np.var(hht_related[item, :])
-    #
-    #     return np.array(sum_num)
-    #
-    # def get_bjp_features(self, bjp):
-    #     """Get sum of var from A related features
-    #
-    #     Returns statistics: np.ndarray [shape=(2*n_imf,)], real-valued statistics features of hht_related
-    #     Parameters
-    #     ----------
-    #     bjp : np.ndarray [shape=(frame_length, )], instantaneous amplitude of a signal in a frame.
-    #
-    #     """
-    #     bjp_feature = np.empty(10, dtype=np.complex64, order='F')
-    #     # Get statistics features from each imf
-    #     max_num = 4
-    #     bjp_feature[8] = np.var(bjp)
-    #     band = 0
-    #     num = 0
-    #     for k in range(len(bjp)):
-    #         if bjp(k) > 1:
-    #             band = band + 1
-    #         if bjp(k) > 0.5:
-    #             num = num + 1
-    #         if num == 20:
-    #             stop = k - 20
-    #
-    #     bjp_feature[9] =
-    #
-    #     for item in range(max_num):
-    #         bjp_feature[item] = np.max(bjp)
-    #         bjp_feature[(max_num - 1) + item] = np.argmax(bjp)
-    #         bjp[np.argmax(bjp)] = 0
-    #
-    #
-    #     return bjp_feature
-
-    def hht(self, y, hop_length=None, win_length=None, window='hann',
+    def hht(self, y, hop_length=None, win_length=None,
             center=True, dtype=np.complex64, pad_mode='reflect'):
         """Hilbert-Huang transform (HHT)
 
@@ -306,14 +238,6 @@ class HHTFeatureExtractor(FeatureExtractor):
             with zeros to match `n_fft`.
 
             If unspecified, defaults to ``win_length = n_fft``.
-
-        window : string, tuple, number, function, or np.ndarray [shape=(n_fft,)]
-            - a window specification (string, tuple, or number);
-              see `scipy.signal.get_window`
-            - a window function, such as `scipy.signal.hanning`
-            - a vector or array of length `n_fft`
-
-            .. see also:: `filters.get_window`
 
         center      : boolean
             - If `True`, the signal `y` is padded so that frame
@@ -342,7 +266,6 @@ class HHTFeatureExtractor(FeatureExtractor):
         if hop_length is None:
             hop_length = int(win_length / 2)
 
-        # hht_window = filters.get_window(window, win_length, fftbins=True)
         hht_window = self.window
 
         # Pad the window out to n_hht size

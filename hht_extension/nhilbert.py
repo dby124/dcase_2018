@@ -11,7 +11,8 @@ Hilbert transform
 """
 
 import numpy as np
-from pyhht.emd import EMD
+# from pyhht.emd import EMD
+from PyEMD import EMD
 from pyhht.utils import inst_freq
 from numpy.matlib import repmat
 from scipy.signal import hilbert
@@ -28,8 +29,10 @@ def get_hht(x, fs):
     bjp: numpy.ndarray, shape:len(x)- 1.
     """
     t = np.linspace(0, len(x) - 1, len(x) - 1)
-    decomposer = EMD(x)
-    imfs = decomposer.decompose()
+    # decomposer = EMD(x)
+    # imfs = decomposer.decompose()
+    emd = EMD()
+    imfs = emd(x)
 
     A, f, tt = hhspectrum(imfs)
 
